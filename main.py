@@ -1,79 +1,31 @@
+import spider
 from utilities import httpclient
 from utilities import regex
-from utilities import directory
-from tqdm import tqdm
+from bullet import Bullet
 
 
-BASE_URL = 'https://www.manhuadb.com'
-VOLUME_PATTERN = r'<a class="" href="(?P<vol_url>(?:\w|\/)+).html" title="\S+">(?P<vol_num>\d+)</a>'
-IMAGE_PATTERN = r'class="img-fluid show-pic" src="(?P<img_url>http(\w|.|\/)+.jpg)"'
-PAGE_COUNT_PATTERN = r'共 (?P<total_page>\d+) 页'
+BOOK_LIST_PATTERN = r'<a href="(?P<comic_url>(?:\w|/)+)" title="(?P<comic_name>.+)" class="d-block">'
 
 
-def crawl(start_page, save_location):
-    '''
-    Crawl entire book specified by @start_page 
-    and save the result to @save_location
-    '''
-    directory.create_and_cd(save_location)
+# 1 input key word:
+key_word = print("Enter comic name: ")
+# 2 search result:
+search_url = f"{spider.BASE_URL}/search?q={key_word}"
+result = httpclient.get_page(search_url)
+book_list = regex.multi_match(BOOK_LIST_PATTERN, result)
+book_dir = {title: url for url, title in book_list}
+cli = Bullet(prompt="Please choose one to download: ", choices=book_dir.keys)
 
-    for url, num in volumes(start_page):
-        crawl_volume(url, num)
+result = cli.launch()
+print("You chose:", result, book_dir[result])
 
-    print('DONE!')
-
-
-def crawl_volume(url, num):
-    '''
-    Crawl the volume specified by @url and order by @num
-    '''
-    save_location = f'volume{num}'
-    directory.create(save_location)
-
-    total_page = pages_of_volume(url)
-
-    with tqdm(total=total_page, desc=f'Volume{num}') as progress:
-        for page in range(1, total_page + 1):
-            crawl_page(page, url, save_location)
-            progress.update(1)
+start_page = f"{spider.BASE_URL}{book_dir[result]}"
+save_location = result
+spider.crawl(start_page, save_location)
 
 
-def crawl_page(page, volume, save_location):
-    '''
-    Crawl single @page of @volume and save to @save_location
-    '''
-    url = f'{BASE_URL}{volume}_p{page}.html'
-    page_html = httpclient.get_page(url)
+if __name__ == "__main__":
+    start_page = input("Enter the url of start page: ")
+    save_location = input("Location to save the result: ")
 
-    image_url = regex.extract(IMAGE_PATTERN, page_html)
-    filename = f'{save_location}\\{page}.jpg'
-
-    httpclient.download_file(image_url, filename)
-
-
-def volumes(start_page):
-    '''
-    Get volume list from @start_page
-    Extract volumes by @VOLUME_PATTERN
-    '''
-    page = httpclient.get_page(start_page)
-    return regex.multi_match(VOLUME_PATTERN, page)
-
-
-def pages_of_volume(vol_url):
-    '''
-    Get page count of volume specified by @vol_url
-    Extract page count by @PAGE_COUNT_PATTERN
-    '''
-    entry_link = f'{BASE_URL}{vol_url}.html'
-    page = httpclient.get_page(entry_link)
-
-    total_page = regex.extract(PAGE_COUNT_PATTERN, page)
-    return int(total_page)
-
-
-if __name__ == '__main__':
-    start_page = input('Enter the url of start page: ')
-    save_location = input('Location to save the result: ')
-
-    crawl(start_page, save_location)
+    spider.crawl(start_page, save_location)
