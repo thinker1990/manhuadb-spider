@@ -1,6 +1,6 @@
-import httpclient
-import regex
-import directory
+from utilities import httpclient
+from utilities import regex
+from utilities import directory
 from tqdm import tqdm
 
 
@@ -27,10 +27,6 @@ def crawl_volume(url, num):
     '''
     Crawl the volume specified by @url and order by @num
     '''
-    # TO BE DEL
-    if int(num) < 18:
-        return
-
     save_location = f'volume{num}'
     directory.create(save_location)
 
