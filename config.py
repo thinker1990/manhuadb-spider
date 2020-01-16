@@ -13,19 +13,18 @@ def volumes(entry_link):
     """
     Get volume list from @entry_link
     """
-    start_url = f'{BASE_URL}{entry_link}'
-    page = httpclient.get_page(start_url)
+    url = f'{BASE_URL}{entry_link}'
+    page = httpclient.get_page(url)
 
     return regex.multi_match(VOLUME_PATTERN, page)
 
 
-def page_count(vol_url):
+def page_count(entry_link):
     """
-    Get page count of volume specified by @vol_url
-    Extract page count by @PAGE_COUNT_PATTERN
+    Get page count of volume specified by @entry_link
     """
-    entry_link = f"{BASE_URL}{vol_url}.html"
-    page = httpclient.get_page(entry_link)
+    url = f"{BASE_URL}{entry_link}.html"
+    page = httpclient.get_page(url)
 
     total_page = regex.extract(PAGE_COUNT_PATTERN, page)
     return int(total_page)
