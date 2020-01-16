@@ -2,41 +2,60 @@ from config import *
 from utilities import httpclient
 from utilities import directory
 from tqdm import tqdm
+from PyInquirer import prompt
 
 
-def crawl(start_page, save_location):
+def search(key_word):
     '''
-    Crawl entire book specified by @start_page 
-    and save the result to @save_location
+    Search comics by @key_word
     '''
-    directory.create_and_cd(save_location)
+    comics = search_comics(key_word)
+    if not comics:
+        return None
 
-    for url, num in volumes(start_page):
-        crawl_volume(url, num)
+    selection = [
+        {
+            'type': 'list',
+            'name': 'comics',
+            'message': 'Select a comic:',
+            'choices': comics.keys()
+        }
+    ]
+    name = prompt(selection)['comics']
 
-    print('DONE!')
+    return name, comics[name]
 
 
-def crawl_volume(url, num):
+def crawl(comic, start_page):
     '''
-    Crawl the volume specified by @url and order by @num
+    Crawl @comic specified by @start_page 
     '''
-    save_location = f'volume{num}'
-    directory.create(save_location)
+    directory.create_and_cd(comic)
 
-    total_page = pages_of_volume(url)
+    volumes = get_volumes(start_page)
+    for volume, link in volumes.items():
+        crawl_volume(volume, link)
 
-    with tqdm(total=total_page, desc=f'Volume{num}') as progress:
+
+def crawl_volume(volume, link):
+    '''
+    Crawl the @volume specified by @link
+    '''
+    directory.create(volume)
+
+    total_page = page_count(link)
+
+    with tqdm(total=total_page) as progress:
         for page in range(1, total_page + 1):
-            crawl_page(page, url, save_location)
+            crawl_page(page, link, volume)
             progress.update(1)
 
 
-def crawl_page(page, volume, save_location):
+def crawl_page(page, link, volume):
     '''
-    Crawl single @page of @volume and save to @save_location
+    Crawl single @page and save to @volume
     '''
-    url = image_url(page, volume)
-    filename = f'{save_location}\\{page}.jpg'
+    url = image_url(page, link)
+    filename = f'{volume}\\{page}.jpg'
 
     httpclient.download_file(url, filename)
