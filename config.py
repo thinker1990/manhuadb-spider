@@ -1,5 +1,4 @@
-from utilities import httpclient
-from utilities import regex
+from utilities import httpclient, regex
 
 
 BASE_URL = "https://www.manhuadb.com"

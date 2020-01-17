@@ -1,6 +1,13 @@
 import requests
+import tenacity
+from tenacity import retry
 
 
+STOP_CONDITION = tenacity.stop_after_attempt(3)
+WAIT_INTERVAL = tenacity.wait_random(min=3, max=5)
+
+
+@retry(stop=STOP_CONDITION, wait=WAIT_INTERVAL)
 def get_page(url):
     '''
     Get HTML from @url
@@ -12,6 +19,7 @@ def get_page(url):
         raise Exception(f'Can NOT get page: {url}')
 
 
+@retry(stop=STOP_CONDITION, wait=WAIT_INTERVAL)
 def download_file(url, save_as):
     '''
     Download file from @url and save as @save_as
