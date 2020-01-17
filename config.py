@@ -10,7 +10,7 @@ PAGE_COUNT_PATTERN = r"共 (?P<page_count>\d+) 页"
 IMAGE_PATTERN = r'class="img-fluid show-pic" src="(?P<image>http(\w|.|/)+.jpg)"'
 
 
-def search_comics(key_word) -> dict:
+def query_comics(key_word) -> dict:
     '''
     Search comics by @key_word
     '''

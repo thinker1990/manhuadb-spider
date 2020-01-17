@@ -1,29 +1,14 @@
 from config import *
 from utilities import httpclient
 from utilities import directory
-from tqdm import tqdm
-from PyInquirer import prompt
+from utilities import progressbar
 
 
 def search(key_word):
     '''
     Search comics by @key_word
     '''
-    comics = search_comics(key_word)
-    if not comics:
-        return None
-
-    selection = [
-        {
-            'type': 'list',
-            'name': 'comics',
-            'message': 'Select a comic:',
-            'choices': comics.keys()
-        }
-    ]
-    name = prompt(selection)['comics']
-
-    return name, comics[name]
+    return query_comics(key_word)
 
 
 def crawl(comic, start_page):
@@ -42,19 +27,20 @@ def crawl_volume(volume, link):
     Crawl the @volume specified by @link
     '''
     directory.create(volume)
-
     total_page = page_count(link)
 
-    with tqdm(total=total_page) as progress:
-        for page in range(1, total_page + 1):
-            crawl_page(page, link, volume)
-            progress.update(1)
+    def tasks():
+        for idx in range(total_page):
+            yield crawl_page(idx, link, volume)
+
+    progressbar.decorate(tasks(), total_page)
 
 
-def crawl_page(page, link, volume):
+def crawl_page(index, link, volume):
     '''
-    Crawl single @page and save to @volume
+    Crawl single page specified by @index and save to @volume
     '''
+    page = index + 1  # index is zero based
     url = image_url(page, link)
     filename = f'{volume}\\{page}.jpg'
 

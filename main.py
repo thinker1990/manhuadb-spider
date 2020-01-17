@@ -1,14 +1,19 @@
 from spider import search, crawl
+from utilities.prompt import *
+import sys
 
 
-if __name__ == "__main__":
-    key_word = input("Enter comic name: ")
-    result = search(key_word)
-    if not result:
+if __name__ == '__main__':
+    key_word = input('Enter comic name: ')
+    comics = search(key_word)
+    if not comics:
         print('No item found')
+        sys.exit()
 
-    comic, link = result
-    confirm = input(f'Download {comic} now? (Yes/No): ')
-    if confirm.upper().startswith('Y'):
+    name = select(comics.keys())
+    comic, link = name, comics[name]
+    ready = confirm(f'Download {comic} now?')
+    if ready:
         crawl(comic, link)
-        print('DONE!')
+
+    print('DONE!')
