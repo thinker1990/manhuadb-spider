@@ -1,6 +1,5 @@
 from config import *
-from utilities import httpclient, directory
-from utilities import progressbar as pbar
+from utilities import httpclient, directory, cli
 
 
 def search(key_word):
@@ -21,7 +20,7 @@ def crawl(comic, start_page):
         for volume, link in volumes.items():
             yield crawl_volume(volume, link)
 
-    pbar.decorate(tasks(), len(volumes), desc='Total Progress')
+    cli.progressbar(tasks(), len(volumes), desc='Total Progress')
 
 
 def crawl_volume(volume, link):
@@ -35,7 +34,7 @@ def crawl_volume(volume, link):
         for idx in range(total_page):
             yield crawl_page(idx, link, volume)
 
-    pbar.decorate(tasks(), total_page)
+    cli.progressbar(tasks(), total_page)
 
 
 def crawl_page(index, link, volume):

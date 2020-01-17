@@ -1,4 +1,6 @@
 from PyInquirer import prompt
+from tqdm import tqdm
+from typing import Iterable
 
 
 def select(choices) -> str:
@@ -31,3 +33,11 @@ def confirm(question) -> bool:
     ]
 
     return prompt(_question)['answer']
+
+
+def progressbar(tasks: Iterable, count: int, desc=None):
+    '''
+    Decorate the @tasks with progress bar
+    '''
+    for i in tqdm(tasks, desc, count):
+        pass

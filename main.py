@@ -1,5 +1,5 @@
 from spider import search, crawl
-from utilities.prompt import *
+from utilities import cli
 import sys
 
 
@@ -10,9 +10,9 @@ if __name__ == '__main__':
         print('No item found')
         sys.exit()
 
-    name = select(comics.keys())
+    name = cli.select(comics.keys())
     comic, link = name, comics[name]
-    ready = confirm(f'Download {comic} now?')
+    ready = cli.confirm(f'Download {comic} now?')
     if ready:
         crawl(comic, link)
 
