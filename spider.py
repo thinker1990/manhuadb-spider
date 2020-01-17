@@ -16,10 +16,13 @@ def crawl(comic, start_page):
     Crawl @comic specified by @start_page 
     '''
     directory.create_and_cd(comic)
-
     volumes = get_volumes(start_page)
-    for volume, link in volumes.items():
-        crawl_volume(volume, link)
+
+    def tasks():
+        for volume, link in volumes.items():
+            yield crawl_volume(volume, link)
+
+    progressbar.decorate(tasks(), len(volumes))
 
 
 def crawl_volume(volume, link):

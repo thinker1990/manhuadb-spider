@@ -1,9 +1,10 @@
 from tqdm import tqdm
+from typing import Iterable
 
 
-def decorate(iterable_task, total):
+def decorate(tasks: Iterable, count: int):
     '''
-    Decorate the @iterable_task with progress bar
+    Decorate the @tasks with progress bar
     '''
-    for i in tqdm(iterable_task, total=total):
+    for i in tqdm(tasks, total=count):
         pass
