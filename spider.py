@@ -1,6 +1,6 @@
 from config import *
-from utilities import httpclient, directory
-from utilities import progressbar as pbar
+import checkpoint
+from utilities import httpclient, directory, cli
 
 
 def search(key_word):
@@ -16,12 +16,14 @@ def crawl(comic, start_page):
     '''
     directory.create_and_cd(comic)
     volumes = get_volumes(start_page)
+    volumes = checkpoint.resume_volume(volumes)
 
     def tasks():
         for volume, link in volumes.items():
             yield crawl_volume(volume, link)
 
-    pbar.decorate(tasks(), len(volumes), desc='Total Progress')
+    cli.progressbar(tasks(), len(volumes), desc='Total Progress')
+    checkpoint.commit()
 
 
 def crawl_volume(volume, link):
@@ -29,21 +31,23 @@ def crawl_volume(volume, link):
     Crawl the @volume specified by @link
     '''
     directory.create(volume)
-    total_page = page_count(link)
+    pages = checkpoint.resume_page(page_count(link))
 
     def tasks():
-        for idx in range(total_page):
-            yield crawl_page(idx, link, volume)
+        for page in pages:
+            yield crawl_page(page, link, volume)
 
-    pbar.decorate(tasks(), total_page)
+    cli.progressbar(tasks(), len(pages))
 
 
-def crawl_page(index, link, volume):
+def crawl_page(page, link, volume):
     '''
-    Crawl single page specified by @index and save to @volume
+    Crawl single @page and save to @volume
     '''
-    page = index + 1  # index is zero based
-    url = image_url(page, link)
-    filename = f'{volume}\\{page}.jpg'
-
-    httpclient.download_file(url, filename)
+    try:
+        url = image_url(page, link)
+        filename = f'{volume}\\{page}.jpg'
+        httpclient.download_file(url, filename)
+    except:
+        checkpoint.mark(volume, page)
+        raise
