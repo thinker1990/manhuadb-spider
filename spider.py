@@ -1,7 +1,6 @@
 from config import *
 from checkpoint import *
 from utilities import httpclient, directory, cli
-from typing import Iterable, Callable
 
 
 def search(key_word):
@@ -17,22 +16,27 @@ def crawl(comic, start_page):
     Crawl @comic specified by @start_page 
     '''
     directory.create_and_cd(comic)
-
     volumes = _get_volumes(start_page)
-    _iterate_over(volumes, crawl_volume)
+
+    @cli.progressbar
+    def process_each(items):
+        for volume, link in items:
+            yield crawl_volume(volume, link)
+    process_each(volumes)
 
 
 def crawl_volume(volume, link):
     '''
     Crawl the @volume specified by @link
     '''
-    def _crawl_page(page):
-        crawl_page(volume, link, page)
-
     directory.create(volume)
-
     pages = _get_pages(link)
-    _iterate_over(pages, _crawl_page)
+
+    @cli.progressbar
+    def process_each(items):
+        for page in items:
+            yield crawl_page(volume, link, page)
+    process_each(pages)
 
 
 @checkpoint_when_abort
@@ -53,9 +57,3 @@ def _get_volumes(link):
 @resume_page
 def _get_pages(link):
     return page_count(link)
-
-
-@cli.progressbar
-def _iterate_over(items: Iterable, task: Callable):
-    for item in items:
-        yield task(item)
