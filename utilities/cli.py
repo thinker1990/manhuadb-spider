@@ -35,9 +35,12 @@ def confirm(question) -> bool:
     return prompt(_question)['answer']
 
 
-def progressbar(tasks: Iterable, count: int, desc=None):
+def progressbar(func):
     '''
     Decorate the @tasks with progress bar
     '''
-    for i in tqdm(tasks, desc, count):
-        pass
+    def wrapper(items: Iterable, task):
+        iterable_tasks = func(items, task)
+        for i in tqdm(iterable_tasks, total=len(items)):
+            pass
+    return wrapper
