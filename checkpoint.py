@@ -2,74 +2,95 @@ from os import path, remove
 from json import dump, load
 
 
-LOG_FILE = 'PROGRESS'
-DONE = 'done'
+_LOG_FILE = 'PROGRESS'
+_DONE = 'done'
 
 
-def mark(volume, page):
+def checkpoint_when_abort(func):
     '''
-    Mark breakpoint at @page of @volume
+    Checkpoint when abort
+    Bad smell: intimate with @func it decorated
     '''
-    progress = {
-        'volume': volume,
-        'page': page,
-        'status': 'interrupt'
-    }
-    with open(LOG_FILE, 'w') as log:
-        dump(progress, log)
+    def wrapper(volume, link, page):
+        try:
+            func(volume, link, page)
+        except:
+            _checkpoint(volume, page)
+            raise
+    return wrapper
 
 
-def resume_volume(volumes):
-    '''
-    Resume unprocessed volumes
-    '''
-    if not path.exists(LOG_FILE):
-        return volumes
-
-    with open(LOG_FILE, 'r') as log:
-        progress = load(log)
-        if progress['status'] == DONE:
-            return {}
-        return since(progress['volume'], volumes)
-
-
-def resume_page(total_page):
-    '''
-    Resume unprocessed pages
-    '''
-    start_from = 1
-    stop_at = total_page + 1
-
-    if not path.exists(LOG_FILE):
-        return range(start_from, stop_at)
-
-    with open(LOG_FILE, 'r') as log:
-        progress = load(log)
-        start_from = progress['page']
-
-    remove(LOG_FILE)  # resume complete
-    return range(start_from, stop_at)
-
-
-def commit():
+def commit_when_done(func):
     '''
     Mark as finished
     '''
-    with open(LOG_FILE, 'w') as log:
-        dump({'status': DONE}, log)
+    def wrapper(*args):
+        func(*args)
+        _checkpoint(status=_DONE)
+    return wrapper
 
 
-def since(marker, volumes):
+def resume_volume(func):
     '''
-    Filter unprocessed @volumes since @marker
+    Resume unprocessed volumes
     '''
-    not_processed = {}
-    match = False
-    for key, val in volumes.items():
-        if match:
-            not_processed[key] = val
-        elif key == marker:
-            not_processed[key] = val
-            match = True
+    def wrapper(*args):
+        volumes = func(*args)
+        if not _checkpoint_exists():
+            return volumes
+        status, volume, _ = _progress()
+        if status == _DONE:
+            return []
+        return _since(volume, volumes)
+    return wrapper
 
-    return not_processed
+
+def resume_page(func):
+    '''
+    Resume unprocessed pages
+    '''
+    def wrapper(*args):
+        total_page = func(*args)
+        stop_at = total_page + 1
+        if not _checkpoint_exists():
+            return range(1, stop_at)
+        _, _, start_from = _progress()
+        _complete_resume()
+        return range(start_from, stop_at)
+    return wrapper
+
+
+def _checkpoint_exists():
+    return path.exists(_LOG_FILE)
+
+
+def _progress():
+    with open(_LOG_FILE, 'r') as log:
+        progress = load(log)
+        return progress['status'], progress['volume'], progress['page']
+
+
+def _checkpoint(volume='', page=0, status='abort'):
+    progress = {
+        'volume': volume,
+        'page': page,
+        'status': status
+    }
+    with open(_LOG_FILE, 'w') as log:
+        dump(progress, log)
+
+
+def _complete_resume():
+    remove(_LOG_FILE)
+
+
+def _since(marker, volumes: list) -> list:
+    result = []
+    not_processed = False
+
+    for key, val in volumes:
+        if key == marker or not_processed:
+            result.append((key, val))
+            not_processed = True
+
+    return result

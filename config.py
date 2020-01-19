@@ -20,15 +20,15 @@ def query_comics(key_word) -> dict:
     return {comic: link for link, comic in comics}
 
 
-def get_volumes(entry_link) -> dict:
+def query_volumes(entry_link) -> list:
     """
-    Get volume list from @entry_link
+    Query volume list from @entry_link
     """
     url = f'{BASE_URL}{entry_link}'
     page = httpclient.get_page(url)
 
     volumes = regex.multi_match(VOLUME_PATTERN, page)
-    return {volume: link for link, volume in volumes}
+    return [(volume, link) for link, volume in volumes]
 
 
 def page_count(entry_link) -> int:
