@@ -17,6 +17,7 @@ def checkpoint_when_abort(func):
         except:
             _checkpoint(volume, page)
             raise
+
     return wrapper
 
 
@@ -27,6 +28,7 @@ def commit_when_done(func):
     def wrapper(*args):
         func(*args)
         _checkpoint(status=_DONE)
+
     return wrapper
 
 
@@ -42,6 +44,7 @@ def resume_volume(func):
         if status == _DONE:
             return []
         return _since(volume, volumes)
+
     return wrapper
 
 
@@ -50,13 +53,13 @@ def resume_page(func):
     Resume unprocessed pages
     '''
     def wrapper(*args):
-        total_page = func(*args)
-        stop_at = total_page + 1
+        pages = func(*args)
         if not _checkpoint_exists():
-            return range(1, stop_at)
-        _, _, start_from = _progress()
+            return pages
+        _, _, abort_page = _progress()
         _complete_resume()
-        return range(start_from, stop_at)
+        return pages[abort_page-1:]
+
     return wrapper
 
 
@@ -85,12 +88,6 @@ def _complete_resume():
 
 
 def _since(marker, volumes: list) -> list:
-    result = []
-    not_processed = False
-
-    for key, val in volumes:
-        if key == marker or not_processed:
-            result.append((key, val))
-            not_processed = True
-
-    return result
+    for idx, (vol, _) in enumerate(volumes):
+        if vol == marker:
+            return volumes[idx:]

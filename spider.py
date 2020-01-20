@@ -1,7 +1,7 @@
 from config import *
 from checkpoint import *
 from utilities import httpclient, directory, cli
-from typing import Iterable, Callable
+from typing import Iterable
 
 
 def search(key_word):
@@ -17,22 +17,29 @@ def crawl(comic, start_page):
     Crawl @comic specified by @start_page 
     '''
     directory.create_and_cd(comic)
-
     volumes = _get_volumes(start_page)
-    _iterate_over(volumes, crawl_volume)
+
+    @cli.progressbar(total=len(volumes), desc='Total Progress')
+    def crawl_all_volumes():
+        for volume, link in volumes:
+            yield crawl_volume(volume, link)
+
+    crawl_all_volumes()
 
 
 def crawl_volume(volume, link):
     '''
     Crawl the @volume specified by @link
     '''
-    def _crawl_page(page):
-        crawl_page(volume, link, page)
-
     directory.create(volume)
-
     pages = _get_pages(link)
-    _iterate_over(pages, _crawl_page)
+
+    @cli.progressbar(total=len(pages), desc=volume)
+    def crawl_all_pages():
+        for page in pages:
+            yield crawl_page(volume, link, page)
+
+    crawl_all_pages()
 
 
 @checkpoint_when_abort
@@ -46,16 +53,11 @@ def crawl_page(volume, link, page):
 
 
 @resume_volume
-def _get_volumes(link):
+def _get_volumes(link) -> Iterable:
     return query_volumes(link)
 
 
 @resume_page
-def _get_pages(link):
-    return page_count(link)
-
-
-@cli.progressbar
-def _iterate_over(items: Iterable, task: Callable):
-    for item in items:
-        yield task(item)
+def _get_pages(link) -> Iterable:
+    total_page = page_count(link)
+    return range(1, total_page+1)
